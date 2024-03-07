@@ -3,6 +3,7 @@ services:
   php:
     image: php:8.2.0-fpm-alpine
     container_name: laravel_php
+    user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
     build:
       context: ./docker/php

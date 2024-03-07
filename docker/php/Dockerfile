@@ -4,28 +4,38 @@ FROM php:8.2.0-fpm-alpine
 # Set working directory
 WORKDIR /var/www/html
 
-# Install Composer from the official image
-COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
-
-# Install system dependencies and PHP extensions in one layer
-# Clean up cache in the same RUN instruction to minimize image size
-RUN apk update && apk add --no-cache \
+# Install system dependencies required for installing PHP extensions and other utilities
+RUN apk add --no-cache \
     libpng-dev \
     libzip-dev \
-    jpegoptim optipng pngquant gifsicle \
+    jpegoptim \
+    optipng \
+    pngquant \
+    gifsicle \
     unzip \
     curl \
     oniguruma-dev \
     libxml2-dev \
-    vim \
-    mysql-client \
-    fish \
-    && docker-php-ext-install pdo_mysql zip exif pcntl gd mbstring \
-    && rm -rf /var/cache/apk/*
+    mysql-client
 
-# For improved security, consider adding a non-root user and switch to it
-# RUN addgroup -S appgroup && adduser -S appuser -G appgroup
-# USER appuser
+# Install PHP extensions required by Laravel and other common needs
+RUN docker-php-ext-install pdo_mysql zip exif pcntl gd mbstring
+
+# Install Composer from the official image
+COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
+
+# Copy your Laravel project into the container
+# Assuming your context is set correctly to the parent directory of your Laravel project
+COPY . /var/www/html
+
+# Correctly set permissions for the storage and bootstrap/cache directories
+#RUN chmod -R 775 storage bootstrap/cache
+
+# Specify non-root user for PHP-FPM process, enhancing security
+# Note: You might need to adjust the user ID based on your host system or Kubernetes setup if you're using it
+RUN addgroup -g 1000 www
+RUN adduser -D -u 1000 -G www www
+USER www
 
 # Specify the command to run
 CMD ["php-fpm"]
