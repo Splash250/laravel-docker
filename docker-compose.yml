@@ -3,16 +3,17 @@ services:
   php:
     image: php:8.2.0-fpm-alpine
     container_name: laravel_php
-    user: "${UID:-1000}:${GID:-1000}"
     restart: unless-stopped
     build:
       context: ./docker/php
       dockerfile: Dockerfile
+    user: "${UID:-1000}:${GID:-1000}"
     volumes:
       - ./:/var/www/html
     networks:
       - app-network
-    
+    depends_on:
+      - db
   web:
     image: nginx:alpine
     container_name: web_server
@@ -38,7 +39,7 @@ services:
       MYSQL_DATABASE: ${DB_DATABASE}
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     volumes:
       - mysqldbvolume:/var/lib/mysql
     networks:
@@ -52,7 +53,7 @@ services:
       - "8000:80"
     environment:
       PMA_HOST: db
-      MYSQL_ROOT_PASSWORD: ${DB_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD}
     networks:
       - app-network
     depends_on:
